@@ -3,7 +3,7 @@
 This is a Gradle Project
 
 Crawler With Extraction and CLI
-[-d depth] [-u url] [-e](enable extraction) 
+[-d depth] [-u url] [-e enable extraction]
 
 Libraries Used
 + Mongo Java Driver
