@@ -1,5 +1,18 @@
-# Search-Engine
+# Search-Engine 
 
-Gradle Project
+This is a Gradle Project
 
-Please do not commit to master. Make a branch and commit to that. I will merge changes. 
+Crawler With Extraction and CLI
+[-d depth] [-u url] [-e](enable extraction) 
+
+Libraries Used
++ Mongo Java Driver
++ Jsoup
++ Tika Core
++ Tika Parsers 
++ Commons CLI 
+
+#####Soon to be added#####
++ Multithreaded
+
+#####Please do not commit to master. Make a branch and commit to that. I will merge changes. 
