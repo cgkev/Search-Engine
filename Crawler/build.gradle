@@ -28,41 +28,19 @@ dependencies {
     
 }
 
-task crawler(type: Jar) {
+task crawlerFinal(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'Crawler',
+        attributes 'Implementation-Title': 'CrawlerExtractionCLI',
                 'Implementation-Version': version,
-                'Main-Class': 'crawler.Crawler'
+                'Main-Class': 'crawler.CrawlerExtractionCLI'
     }
-    baseName = 'Crawler'
+    baseName = 'crawlerFinal'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')
     with jar
 }
 
-task crawlerWithExtracton(type: Jar) {
-    manifest {
-        attributes 'Implementation-Title': 'CrawlerWithExtraction',
-                'Implementation-Version': version,
-                'Main-Class': 'crawler.CrawlerWithExtraction'
-    }
-    baseName = 'CrawlerWithExtraction'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')    
-    with jar
-}
 
-task ArgsTest(type: Jar) {
-    manifest {
-        attributes 'Implementation-Title': 'ArgsTest',
-                'Implementation-Version': version,
-                'Main-Class': 'crawler.ArgsTest'
-    }
-    baseName = 'ArgsTest'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')    
-    with jar
-}
 
 test {
     systemProperties 'property': 'value'
