@@ -35,6 +35,7 @@ task crawler(type: Jar) {
     }
     baseName = 'Crawler'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')
     with jar
 }
 
@@ -46,11 +47,21 @@ task crawlerWithExtracton(type: Jar) {
     }
     baseName = 'CrawlerWithExtraction'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')    
     with jar
 }
 
-
-
+task ArgsTest(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'ArgsTest',
+                'Implementation-Version': version,
+                'Main-Class': 'crawler.ArgsTest'
+    }
+    baseName = 'ArgsTest'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')    
+    with jar
+}
 
 test {
     systemProperties 'property': 'value'
