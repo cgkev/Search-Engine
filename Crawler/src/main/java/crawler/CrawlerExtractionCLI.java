@@ -121,27 +121,29 @@ public class CrawlerExtractionCLI {
 				}
 				// Extracts all links in current page
 				if (error == null && doc != null) { // no errors
+
+					// extract metadata to DB
 					if (extractToDB) {
 						extractToDB(link.get("_id").toString(), doc);
 					}
 					// extracts all links
 					Elements links = doc.select("a[href]");
 					// inserts crawled links to mongodb
-					if (currentDepth < depth) {
-						for (Element crawledLinks : links) {
 
-							// handles "www.a.com" and "www.a.com/" being crawed
-							// again, omits the "/" on all links
-							int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
-							if (sizeOfLink != 0) {
-								if (crawledLinks.attr("abs:href").toLowerCase().trim()
-										.substring(sizeOfLink - 1, sizeOfLink).equals("/")) {
-									insertDB(crawledLinks.attr("abs:href").toLowerCase().trim().substring(0,
-											sizeOfLink - 1), currentDepth + 1, false, null);
-								} else {
-									insertDB(crawledLinks.attr("abs:href").toLowerCase().trim(), currentDepth + 1,
-											false, null);
-								}
+					for (Element crawledLinks : links) {
+
+						// handles "www.a.com" and "www.a.com/" being crawed
+						// again, omits the "/" on all links
+						int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
+						if (sizeOfLink != 0) {
+							if (crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
+									.equals("/")) {
+								insertDB(
+										crawledLinks.attr("abs:href").toLowerCase().trim().substring(0, sizeOfLink - 1),
+										currentDepth + 1, false, null);
+							} else {
+								insertDB(crawledLinks.attr("abs:href").toLowerCase().trim(), currentDepth + 1, false,
+										null);
 							}
 						}
 					}
@@ -152,8 +154,8 @@ public class CrawlerExtractionCLI {
 						new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)));
 
 			}
-			currentDepth++;
 			System.out.println("Depth " + currentDepth + " is done!");
+			currentDepth++;
 		}
 	}
 
@@ -181,5 +183,7 @@ public class CrawlerExtractionCLI {
 
 		crawler(URL, depth, cmd.hasOption("e"));
 		mongoClient.close();
+
+		System.out.println("Crawling is completed!");
 	}
 }
