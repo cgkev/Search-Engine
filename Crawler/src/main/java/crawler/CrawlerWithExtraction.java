@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
@@ -51,10 +50,7 @@ public class CrawlerWithExtraction {
 
 	public static void extractToDB(String _url, Document document) {
 		// set limit to 10mb
-		Tika tika = new Tika();
-		tika.setMaxStringLength(10 * 1024 * 1024);
-
-		BodyContentHandler handler = new BodyContentHandler(10*1024*1024);
+		BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
 		Metadata metadata = new Metadata();
 		ParseContext pcontext = new ParseContext();
 
