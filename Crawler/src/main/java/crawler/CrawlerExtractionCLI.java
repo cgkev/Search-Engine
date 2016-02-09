@@ -5,6 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
@@ -91,10 +96,10 @@ public class CrawlerExtractionCLI {
 		}
 	}
 
-	public static void crawler(String URL, int depth) throws HttpStatusException {
+	public static void crawler(String URL, int depth, boolean extractToDB) throws HttpStatusException {
 		int currentDepth = 0;
 
-		while (currentDepth < depth) {
+		while (currentDepth <= depth) {
 			// System.out.println("Current Depth: " + currentDepth);
 			if (currentDepth == 0) { // initial crawler
 				insertDB(URL, currentDepth, false, null);
@@ -116,25 +121,27 @@ public class CrawlerExtractionCLI {
 				}
 				// Extracts all links in current page
 				if (error == null && doc != null) { // no errors
-					extractToDB(link.get("_id").toString(), doc);
-
+					if (extractToDB) {
+						extractToDB(link.get("_id").toString(), doc);
+					}
 					// extracts all links
 					Elements links = doc.select("a[href]");
 					// inserts crawled links to mongodb
-					for (Element crawledLinks : links) {
+					if (currentDepth < depth) {
+						for (Element crawledLinks : links) {
 
-						// handles "www.a.com" and "www.a.com/" being crawed
-						// again, omits the "/" on all links
-						int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
-						if (sizeOfLink != 0) {
-							if (crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
-									.equals("/")) {
-								insertDB(
-										crawledLinks.attr("abs:href").toLowerCase().trim().substring(0, sizeOfLink - 1),
-										currentDepth + 1, false, null);
-							} else {
-								insertDB(crawledLinks.attr("abs:href").toLowerCase().trim(), currentDepth + 1, false,
-										null);
+							// handles "www.a.com" and "www.a.com/" being crawed
+							// again, omits the "/" on all links
+							int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
+							if (sizeOfLink != 0) {
+								if (crawledLinks.attr("abs:href").toLowerCase().trim()
+										.substring(sizeOfLink - 1, sizeOfLink).equals("/")) {
+									insertDB(crawledLinks.attr("abs:href").toLowerCase().trim().substring(0,
+											sizeOfLink - 1), currentDepth + 1, false, null);
+								} else {
+									insertDB(crawledLinks.attr("abs:href").toLowerCase().trim(), currentDepth + 1,
+											false, null);
+								}
 							}
 						}
 					}
@@ -151,7 +158,28 @@ public class CrawlerExtractionCLI {
 	}
 
 	public static void main(String[] args) throws HttpStatusException {
-		crawler("https://www.symantec.com", 1);
+
+		// ----------Start of CLI----------
+		Options options = new Options();
+
+		// True means a field is required, false means just a flag
+		options.addOption("d", true, "Depth to Crawl");
+		options.addOption("u", true, "URL To Crawl");
+		options.addOption("e", false, "Enable Extraction");
+
+		CommandLine cmd = null;
+		CommandLineParser parser = new DefaultParser();
+		try {
+			cmd = parser.parse(options, args);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
+		int depth = Integer.parseInt(cmd.getOptionValue("d"));
+		String URL = cmd.getOptionValue("u");
+		// ----------End of CLI----------
+
+		crawler(URL, depth, cmd.hasOption("e"));
 		mongoClient.close();
 	}
 }
