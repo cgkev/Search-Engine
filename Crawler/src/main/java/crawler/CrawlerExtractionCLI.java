@@ -39,14 +39,14 @@ public class CrawlerExtractionCLI {
 	static MongoClient mongoClient = new MongoClient();
 	@SuppressWarnings("deprecation")
 	static DB database = mongoClient.getDB("IR");
-	static DBCollection collection = database.getCollection("data");
+	static DBCollection md = database.getCollection("data");
 
 	// inserts into default database
 	public static void insertDB(String URL, Integer LEVEL, boolean CRAWLED, Integer ERROR) {
 		DBObject document = new BasicDBObject().append("_id", URL).append("LEVEL", LEVEL).append("CRAWLED", CRAWLED)
 				.append("ERROR", ERROR);
 		try {
-			collection.insert(document);
+			md.insert(document);
 		} catch (DuplicateKeyException dke) {
 		} catch (WriteConcernException e) {
 		}
@@ -54,6 +54,7 @@ public class CrawlerExtractionCLI {
 	}
 
 	public static void extractToDB(String _url, Document document) {
+		
 		// set limit to 10mb
 		BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
 		Metadata metadata = new Metadata();
@@ -62,8 +63,9 @@ public class CrawlerExtractionCLI {
 		// convert Jsoup Doc to inputStream
 		InputStream stream = new ByteArrayInputStream(document.toString().getBytes(StandardCharsets.UTF_8));
 
-		// cracking the html page
+		// Parsing the html page
 		HtmlParser htmlparser = new HtmlParser();
+		
 		// LOL ALL THESE SWALLOWED EXCEPTIONS :D -Eric PLS
 		try {
 			htmlparser.parse(stream, handler, metadata, pcontext);
@@ -75,23 +77,21 @@ public class CrawlerExtractionCLI {
 			e.printStackTrace();
 		}
 
-		// TODO implement below so it is inserted into the database
 		// insert metadata in db
 		String[] metadataNames = metadata.names();
 
 		for (String name : metadataNames) {
-			collection.update(new BasicDBObject("_id", _url),
+			md.update(new BasicDBObject("_id", _url),
 					new BasicDBObject("$set", new BasicDBObject(name.toUpperCase(), metadata.get(name))));
 		}
 
-		// contents
-		// System.out.println("Contents of the document:" +
-		// handler.toString().trim().replaceAll("\\s{2,}", " "));
-
+		// insert content
+		md.update(new BasicDBObject("_id", _url), new BasicDBObject("$set",
+				new BasicDBObject("CONTENT", handler.toString().trim().replaceAll("\\s{2,}", " "))));
+		
 		try {
 			stream.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -99,17 +99,29 @@ public class CrawlerExtractionCLI {
 	public static void crawler(String URL, int depth, boolean extractToDB) throws HttpStatusException {
 		int currentDepth = 0;
 
+		
 		while (currentDepth <= depth) {
-			// System.out.println("Current Depth: " + currentDepth);
 			if (currentDepth == 0) { // initial crawler
 				insertDB(URL, currentDepth, false, null);
 			}
 
-			DBCursor linksToCrawl = collection.find(new BasicDBObject("CRAWLED", false).append("LEVEL", currentDepth));
+			DBCursor linksToCrawl = md.find(new BasicDBObject("CRAWLED", false).append("LEVEL", currentDepth));
 
+			// loops through the query 
 			for (DBObject link : linksToCrawl) {
 				Integer error = null;
 				Document doc = null;
+
+				// html header time
+				// URLConnection connection = null;
+				// try {
+				// connection = new
+				// URL(link.get("_id").toString()).openConnection();
+				// } catch (IOException e1) {
+				// // TODO Auto-generated catch block
+				// e1.printStackTrace();
+				// }
+				// System.out.println("1 " + connection.getHeaderFields());
 
 				try {
 					doc = Jsoup.connect(link.get("_id").toString()).get();
@@ -119,21 +131,25 @@ public class CrawlerExtractionCLI {
 				} catch (IOException e) {
 
 				}
+
 				// Extracts all links in current page
+				// checks if there are any connection errors or blank webpage
 				if (error == null && doc != null) { // no errors
 
 					// extract metadata to DB
 					if (extractToDB) {
 						extractToDB(link.get("_id").toString(), doc);
 					}
+					
 					// extracts all links
 					Elements links = doc.select("a[href]");
-					// inserts crawled links to mongodb
-
+					
+					
+					// inserts links that are found on the current document to mongodb 
 					for (Element crawledLinks : links) {
 
-						// handles "www.a.com" and "www.a.com/" being crawed
-						// again, omits the "/" on all links
+						// handles "www.a.com" and "www.a.com/" being crawled
+						// again, omits the "/" on all links if present. 
 						int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
 						if (sizeOfLink != 0) {
 							if (crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
@@ -149,8 +165,8 @@ public class CrawlerExtractionCLI {
 					}
 				}
 
-				// update current link to crawled
-				collection.update(new BasicDBObject("_id", link.get("_id").toString()),
+				// update current link to crawled and add any errors 
+				md.update(new BasicDBObject("_id", link.get("_id").toString()),
 						new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)));
 
 			}
