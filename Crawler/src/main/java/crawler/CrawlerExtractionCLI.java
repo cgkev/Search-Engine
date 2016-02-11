@@ -173,6 +173,7 @@ public class CrawlerExtractionCLI {
 			System.out.println("Depth " + currentDepth + " is done!");
 			currentDepth++;
 		}
+		mongoClient.close();
 	}
 
 	public static void main(String[] args) throws HttpStatusException {
@@ -188,17 +189,18 @@ public class CrawlerExtractionCLI {
 		CommandLine cmd = null;
 		CommandLineParser parser = new DefaultParser();
 		try {
+			// uses args and options from above.
 			cmd = parser.parse(options, args);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-
+		// save data to a object
 		int depth = Integer.parseInt(cmd.getOptionValue("d"));
 		String URL = cmd.getOptionValue("u");
 		// ----------End of CLI----------
 
+		// LETS CRAWL! GO! 
 		crawler(URL, depth, cmd.hasOption("e"));
-		mongoClient.close();
 
 		System.out.println("Crawling is completed!");
 	}
