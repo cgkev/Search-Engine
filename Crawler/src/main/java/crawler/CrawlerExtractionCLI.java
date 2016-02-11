@@ -98,6 +98,14 @@ public class CrawlerExtractionCLI {
 
 	public static void crawler(String URL, int depth, boolean extractToDB) throws HttpStatusException {
 		int currentDepth = 0;
+		
+		int size = URL.toLowerCase().trim().toString().length();
+
+		// removes "/" 
+		if (URL.toLowerCase().trim().substring(size - 1, size)
+				.equals("/")) {
+					URL = URL.toLowerCase().trim().substring(0, size - 1);
+		}
 
 		
 		while (currentDepth <= depth) {
@@ -199,6 +207,10 @@ public class CrawlerExtractionCLI {
 		String URL = cmd.getOptionValue("u");
 		// ----------End of CLI----------
 
+		
+		
+		
+		
 		// LETS CRAWL! GO! 
 		crawler(URL, depth, cmd.hasOption("e"));
 
