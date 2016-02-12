@@ -1,6 +1,9 @@
 package crawler;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +47,7 @@ public class CrawlerExtractionCLI {
 	// inserts into default database
 	public static void insertDB(String URL, Integer LEVEL, boolean CRAWLED, Integer ERROR) {
 		DBObject document = new BasicDBObject().append("_id", URL).append("LEVEL", LEVEL).append("CRAWLED", CRAWLED)
-				.append("ERROR", ERROR);
+				.append("ERROR", ERROR).append("SRC PATH", null);
 		try {
 			md.insert(document);
 		} catch (DuplicateKeyException dke) {
@@ -52,8 +55,26 @@ public class CrawlerExtractionCLI {
 		}
 
 	}
-	
 
+	// Creates a folder name "source" and stores all raw html locally into that
+	// folder
+	public static void saveHTML(String fileName, String html) {
+		// create folder
+		File srcDir = new File("source");
+		srcDir.mkdir();
+
+		// create and write to .html file
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter("source/" + fileName + ".html"));
+			writer.write(html);
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// Extracts all metadata to MongoDB
 	public static void extractToDB(String _url, Document document) {
 
 		// set limit to 10mb
@@ -132,10 +153,9 @@ public class CrawlerExtractionCLI {
 				// Extracts all links in current page
 				// checks if there are any connection errors or blank webpage
 				if (error == null && doc != null) { // no errors
-					
-					// TODO
-					// add raw html to mongo
-					//System.out.println(doc);
+
+					// save raw html
+					saveHTML(link.get("_id").hashCode() + "", doc.toString());
 
 					// extract metadata to DB
 					if (extractToDB) {
@@ -151,7 +171,7 @@ public class CrawlerExtractionCLI {
 
 						// handles "www.a.com" and "www.a.com/" being crawled
 						// again, omits the "/" on all links if present.
-						
+
 						int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
 						if (sizeOfLink != 0) {
 							if (crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
@@ -164,16 +184,23 @@ public class CrawlerExtractionCLI {
 							} else {
 								insertDB(crawledLinks.attr("abs:href").toLowerCase().trim(), currentDepth + 1, false,
 										null);
-							
+
 							}
 						}
 					}
 				}
 
 				// update current link to crawled and add any errors
-				md.update(new BasicDBObject("_id", link.get("_id").toString()),
-						new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)));
+				// if doc is null then no source URL will be added
+				if (doc != null) {
+					md.update(new BasicDBObject("_id", link.get("_id").toString()),
+							new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)
+									.append("SRC PATH", "source/" + link.get("_id").hashCode() + ".html")));
 
+				} else {
+					md.update(new BasicDBObject("_id", link.get("_id").toString()),
+							new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)));
+				}
 			}
 			System.out.println("Depth " + currentDepth + " is done!");
 			currentDepth++;
