@@ -40,6 +40,18 @@ task crawlerFinal(type: Jar) {
     with jar
 }
 
+task dataDump(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'DataDump',
+                'Implementation-Version': version,
+                'Main-Class': 'crawler.DataDump'
+    }
+    baseName = 'dataDump'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude('META-INF/.RSA', 'META-INF/.SF','META-INF/*.DSA')
+    with jar
+}
+
 
 
 test {
