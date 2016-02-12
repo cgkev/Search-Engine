@@ -103,7 +103,8 @@ public class CrawlerExtractionCLI {
 
 		// removes "/" 
 		if (URL.toLowerCase().trim().substring(size - 1, size)
-				.equals("/")) {
+				.equals("/") || URL.toLowerCase().trim().substring(size - 1, size)
+				.equals("#") ) {
 					URL = URL.toLowerCase().trim().substring(0, size - 1);
 		}
 
@@ -161,7 +162,8 @@ public class CrawlerExtractionCLI {
 						int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
 						if (sizeOfLink != 0) {
 							if (crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
-									.equals("/")) {
+									.equals("/") || crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
+									.equals("#")) {
 								insertDB(
 										crawledLinks.attr("abs:href").toLowerCase().trim().substring(0, sizeOfLink - 1),
 										currentDepth + 1, false, null);
@@ -207,9 +209,6 @@ public class CrawlerExtractionCLI {
 		String URL = cmd.getOptionValue("u");
 		// ----------End of CLI----------
 
-		
-		
-		
 		
 		// LETS CRAWL! GO! 
 		crawler(URL, depth, cmd.hasOption("e"));
