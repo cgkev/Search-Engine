@@ -1,6 +1,9 @@
 package crawler;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +47,7 @@ public class CrawlerExtractionCLI {
 	// inserts into default database
 	public static void insertDB(String URL, Integer LEVEL, boolean CRAWLED, Integer ERROR) {
 		DBObject document = new BasicDBObject().append("_id", URL).append("LEVEL", LEVEL).append("CRAWLED", CRAWLED)
-				.append("ERROR", ERROR);
+				.append("ERROR", ERROR).append("SRC PATH", null);
 		try {
 			md.insert(document);
 		} catch (DuplicateKeyException dke) {
@@ -53,8 +56,27 @@ public class CrawlerExtractionCLI {
 
 	}
 
+	// Creates a folder name "source" and stores all raw html locally into that
+	// folder
+	public static void saveHTML(String fileName, String html) {
+		// create folder
+		File srcDir = new File("source");
+		srcDir.mkdir();
+
+		// create and write to .html file
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter("source/" + fileName + ".html"));
+			writer.write(html);
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// Extracts all metadata to MongoDB
 	public static void extractToDB(String _url, Document document) {
-		
+
 		// set limit to 10mb
 		BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
 		Metadata metadata = new Metadata();
@@ -65,7 +87,7 @@ public class CrawlerExtractionCLI {
 
 		// Parsing the html page
 		HtmlParser htmlparser = new HtmlParser();
-		
+
 		// LOL ALL THESE SWALLOWED EXCEPTIONS :D -Eric PLS
 		try {
 			htmlparser.parse(stream, handler, metadata, pcontext);
@@ -88,7 +110,7 @@ public class CrawlerExtractionCLI {
 		// insert content
 		md.update(new BasicDBObject("_id", _url), new BasicDBObject("$set",
 				new BasicDBObject("CONTENT", handler.toString().trim().replaceAll("\\s{2,}", " "))));
-		
+
 		try {
 			stream.close();
 		} catch (IOException e) {
@@ -99,7 +121,14 @@ public class CrawlerExtractionCLI {
 	public static void crawler(String URL, int depth, boolean extractToDB) throws HttpStatusException {
 		int currentDepth = 0;
 
-		
+		int size = URL.toLowerCase().trim().toString().length();
+
+		// removes "/"
+		if (URL.toLowerCase().trim().substring(size - 1, size).equals("/")
+				|| URL.toLowerCase().trim().substring(size - 1, size).equals("#")) {
+			URL = URL.toLowerCase().trim().substring(0, size - 1);
+		}
+
 		while (currentDepth <= depth) {
 			if (currentDepth == 0) { // initial crawler
 				insertDB(URL, currentDepth, false, null);
@@ -107,21 +136,10 @@ public class CrawlerExtractionCLI {
 
 			DBCursor linksToCrawl = md.find(new BasicDBObject("CRAWLED", false).append("LEVEL", currentDepth));
 
-			// loops through the query 
+			// loops through the query
 			for (DBObject link : linksToCrawl) {
 				Integer error = null;
 				Document doc = null;
-
-				// html header time
-				// URLConnection connection = null;
-				// try {
-				// connection = new
-				// URL(link.get("_id").toString()).openConnection();
-				// } catch (IOException e1) {
-				// // TODO Auto-generated catch block
-				// e1.printStackTrace();
-				// }
-				// System.out.println("1 " + connection.getHeaderFields());
 
 				try {
 					doc = Jsoup.connect(link.get("_id").toString()).get();
@@ -136,43 +154,58 @@ public class CrawlerExtractionCLI {
 				// checks if there are any connection errors or blank webpage
 				if (error == null && doc != null) { // no errors
 
+					// save raw html
+					saveHTML(link.get("_id").hashCode() + "", doc.toString());
+
 					// extract metadata to DB
 					if (extractToDB) {
 						extractToDB(link.get("_id").toString(), doc);
 					}
-					
+
 					// extracts all links
 					Elements links = doc.select("a[href]");
-					
-					
-					// inserts links that are found on the current document to mongodb 
+
+					// inserts links that are found on the current document to
+					// mongodb
 					for (Element crawledLinks : links) {
 
 						// handles "www.a.com" and "www.a.com/" being crawled
-						// again, omits the "/" on all links if present. 
+						// again, omits the "/" on all links if present.
+
 						int sizeOfLink = crawledLinks.attr("abs:href").toLowerCase().trim().toString().length();
 						if (sizeOfLink != 0) {
 							if (crawledLinks.attr("abs:href").toLowerCase().trim().substring(sizeOfLink - 1, sizeOfLink)
-									.equals("/")) {
+									.equals("/")
+									|| crawledLinks.attr("abs:href").toLowerCase().trim()
+											.substring(sizeOfLink - 1, sizeOfLink).equals("#")) {
 								insertDB(
 										crawledLinks.attr("abs:href").toLowerCase().trim().substring(0, sizeOfLink - 1),
 										currentDepth + 1, false, null);
 							} else {
 								insertDB(crawledLinks.attr("abs:href").toLowerCase().trim(), currentDepth + 1, false,
 										null);
+
 							}
 						}
 					}
 				}
 
-				// update current link to crawled and add any errors 
-				md.update(new BasicDBObject("_id", link.get("_id").toString()),
-						new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)));
+				// update current link to crawled and add any errors
+				// if doc is null then no source URL will be added
+				if (doc != null) {
+					md.update(new BasicDBObject("_id", link.get("_id").toString()),
+							new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)
+									.append("SRC PATH", "source/" + link.get("_id").hashCode() + ".html")));
 
+				} else {
+					md.update(new BasicDBObject("_id", link.get("_id").toString()),
+							new BasicDBObject("$set", new BasicDBObject("CRAWLED", true).append("ERROR", error)));
+				}
 			}
 			System.out.println("Depth " + currentDepth + " is done!");
 			currentDepth++;
 		}
+		mongoClient.close();
 	}
 
 	public static void main(String[] args) throws HttpStatusException {
@@ -188,17 +221,18 @@ public class CrawlerExtractionCLI {
 		CommandLine cmd = null;
 		CommandLineParser parser = new DefaultParser();
 		try {
+			// uses args and options from above.
 			cmd = parser.parse(options, args);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-
+		// save data to a object
 		int depth = Integer.parseInt(cmd.getOptionValue("d"));
 		String URL = cmd.getOptionValue("u");
 		// ----------End of CLI----------
 
+		// LETS CRAWL! GO!
 		crawler(URL, depth, cmd.hasOption("e"));
-		mongoClient.close();
 
 		System.out.println("Crawling is completed!");
 	}
