@@ -3,8 +3,15 @@ package index;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -17,19 +24,34 @@ import org.xml.sax.SAXException;
 
 // Write Indexing here
 
+// ********--Citing Sources--******** 
+// Kevin
+// Walking the file tree: https://docs.oracle.com/javase/tutorial/essential/io/walk.html#invoke
+// Walking the file tree: http://stackoverflow.com/questions/10014746/the-correct-way-to-use-filevisitor-in-java
+
 public class Indexing {
+	public static List<String> traverseAllFiles(String parentDirectory) throws IOException {
+		Path startPath = Paths.get(parentDirectory);
+		List<String> pathsOfHtml = new ArrayList<String>();
+		Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				// Validates if files name has .html
+				if (file.getFileName().toString().contains(".html")) {
+					// add to List
+					pathsOfHtml.add(file.toString());
+				}
+				return FileVisitResult.CONTINUE;
+			}
+		});
+
+		return pathsOfHtml;
+	}
 
 	private static HashMap<String, Double> termFrequency = new HashMap<String, Double>();
 	private static HashMap<String, ArrayList<Integer>> wordPosition = new HashMap<String, ArrayList<Integer>>();
 	// Term, URL
 	private static HashMap<String, ArrayList<String>> TermURL = new HashMap<String, ArrayList<String>>();
-
-	public static void main(String[] args) throws IOException, SAXException, TikaException {
-
-		File file = new File("(15810)_1994_JR1_9064.html");
-		String content = extractHtml(file);
-		calculateTF(termFrequency, wordCount(content));
-	}
 
 	public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
 			"if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
@@ -77,7 +99,7 @@ public class Indexing {
 	public static void calculateTF(HashMap<String, Double> map, double numberOfTerms) {
 
 		for (Map.Entry<String, Double> entry : map.entrySet()) {
-			entry.setValue((entry.getValue() / numberOfTerms) - entry.getValue());
+			entry.setValue(entry.getValue() / numberOfTerms);
 		}
 	}
 
@@ -126,5 +148,23 @@ public class Indexing {
 		htmlparser.parse(inputstream, handler, metadata, pcontext);
 
 		return handler.toString();
+
+	}
+
+	public static void main(String[] args) throws IOException, SAXException, TikaException {
+
+		String PATH = "C:\\Users\\Kevin\\Desktop\\en";
+		List<String> pathsToIndex = traverseAllFiles(PATH);
+		System.out.println("Size: " + pathsToIndex.size());
+
+		System.out.println("Path to index" + pathsToIndex.get(0));
+
+		System.out.println("\n_________________________________________");
+		
+		File file = new File(pathsToIndex.get(0));
+		String content = extractHtml(file);
+		calculateTF(termFrequency, wordCount(content));
+		
+		printHashMap(termFrequency);
 	}
 }
