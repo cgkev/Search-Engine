@@ -19,112 +19,112 @@ import org.xml.sax.SAXException;
 
 public class Indexing {
 
-    private static HashMap<String, Double> termFrequency = new HashMap<String, Double>();
-    private static HashMap<String, ArrayList<Integer>> wordPosition = new HashMap<String, ArrayList<Integer>>();
-    // Term, URL
-    private static HashMap<String, ArrayList<String>> TermURL = new HashMap<String, ArrayList<String>>();
+	private static HashMap<String, Double> termFrequency = new HashMap<String, Double>();
+	private static HashMap<String, ArrayList<Integer>> wordPosition = new HashMap<String, ArrayList<Integer>>();
+	// Term, URL
+	private static HashMap<String, ArrayList<String>> TermURL = new HashMap<String, ArrayList<String>>();
 
-    public static void main(String[] args) throws IOException, SAXException, TikaException {
+	public static void main(String[] args) throws IOException, SAXException, TikaException {
 
-	File file = new File("(15810)_1994_JR1_9064.html");
-	String content = extractHtml(file);
-	calculateTF(termFrequency, wordCount(content));
-    }
+		File file = new File("(15810)_1994_JR1_9064.html");
+		String content = extractHtml(file);
+		calculateTF(termFrequency, wordCount(content));
+	}
 
-    public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
-	    "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
-	    "there", "these", "they", "this", "to", "was", "will", "with" };
+	public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
+			"if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
+			"there", "these", "they", "this", "to", "was", "will", "with" };
 
-    public static double wordCount(String text) {
+	public static double wordCount(String text) {
 
-	int numberOfTerms = 0;
+		int numberOfTerms = 0;
 
-	Scanner in = new Scanner(text);
-	while (in.hasNext()) {
+		Scanner in = new Scanner(text);
+		while (in.hasNext()) {
 
-	    // Convert the word into lower case *unique*
-	    String word = convertToLowerCase(in.next());
+			// Convert the word into lower case *unique*
+			String word = convertToLowerCase(in.next());
 
-	    // If it is NOT an empty space or a STOP WORD; continue
-	    if (word != "" && (isStopWord(word) == false)) {
-		numberOfTerms++;
-		Double count = termFrequency.get(word);
+			// If it is NOT an empty space or a STOP WORD; continue
+			if (word != "" && (isStopWord(word) == false)) {
+				numberOfTerms++;
+				Double count = termFrequency.get(word);
 
-		// If word isn't already in the map, initialize it at 1
-		if (count == null) {
-		    count = 1.0;
-		} else { // If word is already in the map, increment
-		    count += 1.0;
+				// If word isn't already in the map, initialize it at 1
+				if (count == null) {
+					count = 1.0;
+				} else { // If word is already in the map, increment
+					count += 1.0;
+				}
+
+				termFrequency.put(word, count);
+			}
+
 		}
 
-		termFrequency.put(word, count);
-	    }
+		// printHashMap(termFrequency);
+		// printWordPosition(wordPosition);
+
+		return numberOfTerms;
+	}
+
+	public static void printHashMap(HashMap<String, Double> map) {
+		for (String key : map.keySet()) {
+			System.out.println(key + " : " + map.get(key));
+		}
+	}
+
+	public static void calculateTF(HashMap<String, Double> map, double numberOfTerms) {
+
+		for (Map.Entry<String, Double> entry : map.entrySet()) {
+			entry.setValue((entry.getValue() / numberOfTerms) - entry.getValue());
+		}
+	}
+
+	public static double inverseDocumentFrequency(HashMap<String, Integer> map) {
+		// number of doc = size of ocllection
+		//
+		return 0;
 
 	}
 
-	// printHashMap(termFrequency);
-	// printWordPosition(wordPosition);
+	// Checks to see if the word is a stop word
+	public static boolean isStopWord(String word) {
 
-	return numberOfTerms;
-    }
+		boolean isStopWord = false;
 
-    public static void printHashMap(HashMap<String, Double> map) {
-	for (String key : map.keySet()) {
-	    System.out.println(key + " : " + map.get(key));
-	}
-    }
-
-    public static void calculateTF(HashMap<String, Double> map, double numberOfTerms) {
-
-	for (Map.Entry<String, Double> entry : map.entrySet()) {
-	    entry.setValue((entry.getValue() / numberOfTerms) - entry.getValue());
-	}
-    }
-
-    public static double inverseDocumentFrequency(HashMap<String, Integer> map) {
-	// number of doc = size of ocllection
-	//
-	return 0;
-
-    }
-
-    // Checks to see if the word is a stop word
-    public static boolean isStopWord(String word) {
-
-	boolean isStopWord = false;
-
-	for (int i = 0; i < ENGLISH_STOP_WORDS.length; i++) {
-	    if (ENGLISH_STOP_WORDS[i].equals(word)) {
-		isStopWord = true;
-		break;
-	    }
-	}
-	return isStopWord;
-    }
-
-    public static String convertToLowerCase(String word) {
-
-	String lowerCasedWord = "";
-
-	for (int i = 0; i < word.length(); i++) {
-	    char c = word.charAt(i);
-	    if (Character.isLetter(c)) {
-		lowerCasedWord = lowerCasedWord + c;
-	    }
+		for (int i = 0; i < ENGLISH_STOP_WORDS.length; i++) {
+			if (ENGLISH_STOP_WORDS[i].equals(word)) {
+				isStopWord = true;
+				break;
+			}
+		}
+		return isStopWord;
 	}
 
-	return lowerCasedWord.toLowerCase();
-    }
+	public static String convertToLowerCase(String word) {
 
-    public static String extractHtml(File fileName) throws IOException, SAXException, TikaException {
-	BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
-	Metadata metadata = new Metadata();
-	FileInputStream inputstream = new FileInputStream(fileName);
-	ParseContext pcontext = new ParseContext();
+		String lowerCasedWord = "";
 
-	HtmlParser htmlparser = new HtmlParser();
-	htmlparser.parse(inputstream, handler, metadata, pcontext);
+		for (int i = 0; i < word.length(); i++) {
+			char c = word.charAt(i);
+			if (Character.isLetter(c)) {
+				lowerCasedWord = lowerCasedWord + c;
+			}
+		}
 
-	return handler.toString();
-    }
+		return lowerCasedWord.toLowerCase();
+	}
+
+	public static String extractHtml(File fileName) throws IOException, SAXException, TikaException {
+		BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
+		Metadata metadata = new Metadata();
+		FileInputStream inputstream = new FileInputStream(fileName);
+		ParseContext pcontext = new ParseContext();
+
+		HtmlParser htmlparser = new HtmlParser();
+		htmlparser.parse(inputstream, handler, metadata, pcontext);
+
+		return handler.toString();
+	}
 }
