@@ -17,32 +17,33 @@ import java.util.List;
 // Walking the file tree: https://docs.oracle.com/javase/tutorial/essential/io/walk.html#invoke
 // Walking the file tree: http://stackoverflow.com/questions/10014746/the-correct-way-to-use-filevisitor-in-java
 
-
 public class Indexing {
-	static int counter = 0;
-	static List<String> pathsOfHtml = new ArrayList<String>();
-	
-	public static void traverseAllFiles(String parentDirectory) throws IOException{
+	public static List<String> traverseAllFiles(String parentDirectory) throws IOException {
 		Path startPath = Paths.get(parentDirectory);
+		List<String> pathsOfHtml = new ArrayList<String>();
 		Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 				// Validates if files name has .html
 				if (file.getFileName().toString().contains(".html")) {
-				  // add to List
+					// add to List
 					pathsOfHtml.add(file.toString());
 				}
 				return FileVisitResult.CONTINUE;
 			}
-		}); 
+		});
+
+		return pathsOfHtml;
 	}
-	
-	
+
 	public static void main(String[] args) throws IOException {
+
 		
-		// Note: Path must be changed to work on your filesystem. 
+		// Note: Path must be changed to work on your filesystem.
+		String PATH = "C:\\Users\\Kevin\\Desktop\\en";
 		
-		traverseAllFiles("C:\\Users\\Kevin\\Desktop\\en");
-		System.out.println("Size: " + pathsOfHtml.size());
+		
+		List<String> pathsToIndex = traverseAllFiles(PATH);
+		System.out.println("Size: " + pathsToIndex.size());
 	}
 }
