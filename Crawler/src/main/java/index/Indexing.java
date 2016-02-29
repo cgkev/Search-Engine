@@ -48,17 +48,13 @@ public class Indexing {
     private static HashMap<String, Double> termFrequency = new HashMap<String, Double>();
     private static HashMap<String, ArrayList<Integer>> wordPosition = new HashMap<String, ArrayList<Integer>>();
 
-    // Term, URL
-    private static HashMap<String, ArrayList<String>> termURL = new HashMap<String, ArrayList<String>>();
-
     public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
 	    "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
 	    "there", "these", "they", "this", "to", "was", "will", "with" };
 
-    // inserts into default database
     public static void insertDB(String URL, String term, Double termFrequency) {
-	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("TERM FREQUENCY",
-		termFrequency);
+	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("TF", termFrequency)
+		.append("IDF", null).append("TFIDF", null);
 	try {
 	    md.insert(document);
 	} catch (DuplicateKeyException dke) {
@@ -124,20 +120,23 @@ public class Indexing {
 	}
     }
 
-    public static void calculateTF(HashMap<String, Double> map, double numberOfTerms) {
+    public static double calculateTF(HashMap<String, Double> map, double numberOfTerms) {
+	double TF = 0;
 	for (Map.Entry<String, Double> entry : map.entrySet()) {
-	    entry.setValue(entry.getValue() / numberOfTerms);
+	    TF = entry.setValue(entry.getValue() / numberOfTerms);
 	}
+	return TF;
     }
 
-    public static double inverseDocumentFrequency(HashMap<String, Integer> map) {
-	// number of doc = size of ocllection
-	//
-	return 0;
-
+    public static double calculateIDF(double totalDocuments, double totalDocWithTerm) {
+	return Math.log10(totalDocuments / totalDocWithTerm);
     }
 
-    // Checks to see if the word is a stop word
+    public static double calculateTFIDF(double TF, double IDF) {
+	double TFIDF = TF * IDF;
+	return TFIDF;
+    }
+
     public static boolean isStopWord(String word) {
 
 	boolean isStopWord = false;
@@ -175,42 +174,57 @@ public class Indexing {
 	htmlparser.parse(inputstream, handler, metadata, pcontext);
 
 	return handler.toString();
+    }
+
+    public static void index(String Path) throws IOException, SAXException, TikaException {
+	List<String> pathsToIndex = traverseAllFiles(Path);
+
+	for (int i = 0; i < pathsToIndex.size(); i++) {
+	    File file = new File(pathsToIndex.get(i));
+	    String content = extractHtml(file);
+
+	    calculateTF(termFrequency, wordCount(content));
+
+	    // moving TF to DB
+	    for (Map.Entry<String, Double> entry : termFrequency.entrySet()) {
+		insertDB(pathsToIndex.get(i).toString(), entry.getKey(), entry.getValue());
+	    }
+
+	    termFrequency.clear();
+	}
+
+	DBCursor curs = md.find();
+	while (curs.hasNext()) {
+	    DBObject obj = curs.next();
+
+	    String word = (String) obj.get("WORD");
+	    Double freq = (Double) obj.get("TF");
+
+	    DBCursor findWord = md.find(new BasicDBObject("WORD", word));
+	    double IDF = calculateIDF((double) pathsToIndex.size(), (double) findWord.size());
+	    double TFIDF = calculateTFIDF(IDF, freq);
+
+	    // Find "word" with name and update IDF value
+	    BasicDBObject IDFObject = new BasicDBObject().append("$set", new BasicDBObject().append("IDF", IDF));
+
+	    md.update(new BasicDBObject("WORD", word), IDFObject, false, true);
+
+	    BasicDBObject TFIDFObject = new BasicDBObject().append("$set", new BasicDBObject().append("TFIDF", TFIDF));
+	    md.update(new BasicDBObject("WORD", word), TFIDFObject, false, true);
+	}
 
     }
 
     public static void main(String[] args) throws IOException, SAXException, TikaException {
-//	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
-//	// String PATH = "C:\\Users\\Kevin\\Desktop\\en";
-//	List<String> pathsToIndex = traverseAllFiles(PATH); // # of doc
-//	System.out.println("Size: " + pathsToIndex.size());
-//
-//	System.out.println("Path to index" + pathsToIndex.get(0));
-//
-//	System.out.println("\n_________________________________________");
-//	// curry to find the word if it exists, add to URL
-//	for (int i = 0; i < pathsToIndex.size(); i++) {
-//	    File file = new File(pathsToIndex.get(i));
-//	    String content = extractHtml(file);
-//
-//	    // calculates the tf
-//	    calculateTF(termFrequency, wordCount(content));
-//
-//	    
-//	    // moving TF to DB 
-//	    for (Map.Entry<String, Double> entry : termFrequency.entrySet()) {
-//		insertDB(pathsToIndex.get(i).toString(),entry.getKey(), entry.getValue());
-//	    }
-//
-//	    
-//	    termFrequency.clear();
-//	}
-	
-	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "lie"));
-	
+	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
+
+	index(PATH);
+
+	// Find the URL that correlates to the word in the collection.
+	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "hi"));
 	for (DBObject link : linksToCrawl) {
 	    System.out.println(link.get("URL").toString());
 	}
-		
-		
+
     }
 }
