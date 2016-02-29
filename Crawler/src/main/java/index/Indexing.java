@@ -52,9 +52,9 @@ public class Indexing {
 	    "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
 	    "there", "these", "they", "this", "to", "was", "will", "with" };
 
-    public static void insertDB(String URL, String term, Double termFrequency) {
-	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("TF", termFrequency)
-		.append("IDF", null).append("TFIDF", null);
+    public static void insertDB(String URL, String term, Double TFIDF) {
+	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("TFIDF", TFIDF);
+	
 	try {
 	    md.insert(document);
 	} catch (DuplicateKeyException dke) {
@@ -89,10 +89,10 @@ public class Indexing {
 	while (in.hasNext()) {
 
 	    // Convert the word into lower case *unique*
-	    String word = convertToLowerCase(in.next());
+	    String word = in.next().toLowerCase();
 
 	    // If it is NOT an empty space or a STOP WORD; continue
-	    if (word != "" && (isStopWord(word) == false)) {
+	    if (word != "" && !word.matches("^\\p{Punct}") && (isStopWord(word) == false)) {
 		numberOfTerms++;
 		Double count = termFrequency.get(word);
 
@@ -107,7 +107,7 @@ public class Indexing {
 	    }
 
 	}
-
+	in.close();
 	// printHashMap(termFrequency);
 	// printWordPosition(wordPosition);
 
@@ -127,14 +127,9 @@ public class Indexing {
 	}
 	return TF;
     }
-
+    
     public static double calculateIDF(double totalDocuments, double totalDocWithTerm) {
 	return Math.log10(totalDocuments / totalDocWithTerm);
-    }
-
-    public static double calculateTFIDF(double TF, double IDF) {
-	double TFIDF = TF * IDF;
-	return TFIDF;
     }
 
     public static boolean isStopWord(String word) {
@@ -149,20 +144,7 @@ public class Indexing {
 	}
 	return isStopWord;
     }
-
-    public static String convertToLowerCase(String word) {
-
-	String lowerCasedWord = "";
-
-	for (int i = 0; i < word.length(); i++) {
-	    char c = word.charAt(i);
-	    if (Character.isLetter(c)) {
-		lowerCasedWord = lowerCasedWord + c;
-	    }
-	}
-
-	return lowerCasedWord.toLowerCase();
-    }
+    
 
     public static String extractHtml(File fileName) throws IOException, SAXException, TikaException {
 	BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
@@ -198,17 +180,14 @@ public class Indexing {
 	    DBObject obj = curs.next();
 
 	    String word = (String) obj.get("WORD");
-	    Double freq = (Double) obj.get("TF");
-
+	    Double freq = (Double) obj.get("TFIDF");
+	    
 	    DBCursor findWord = md.find(new BasicDBObject("WORD", word));
-	    double IDF = calculateIDF((double) pathsToIndex.size(), (double) findWord.size());
-	    double TFIDF = calculateTFIDF(IDF, freq);
+	    
+	    // Takes the TF stored in TFIDF to calculate TFIDF weight
+	    double TFIDF = freq * Math.log10((double) pathsToIndex.size() / (double) findWord.size());
 
-	    // Find "word" with name and update IDF value
-	    BasicDBObject IDFObject = new BasicDBObject().append("$set", new BasicDBObject().append("IDF", IDF));
-
-	    md.update(new BasicDBObject("WORD", word), IDFObject, false, true);
-
+	    // Updates TFIDF value
 	    BasicDBObject TFIDFObject = new BasicDBObject().append("$set", new BasicDBObject().append("TFIDF", TFIDF));
 	    md.update(new BasicDBObject("WORD", word), TFIDFObject, false, true);
 	}
