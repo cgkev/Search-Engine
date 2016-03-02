@@ -46,6 +46,7 @@ public class Indexing {
     static DBCollection md = database.getCollection("data");
 
     private static HashMap<String, Double> termFrequency = new HashMap<String, Double>();
+
     private static HashMap<String, ArrayList<Integer>> wordPosition = new HashMap<String, ArrayList<Integer>>();
 
     public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
@@ -54,7 +55,9 @@ public class Indexing {
 
     public static void insertDB(String URL, String term, Double TFIDF) {
 	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("TFIDF", TFIDF);
-	
+	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("Position", null)
+		.append("TFIDF", TFIDF);
+
 	try {
 	    md.insert(document);
 	} catch (DuplicateKeyException dke) {
@@ -82,17 +85,19 @@ public class Indexing {
     }
 
     public static double wordCount(String text) {
-
 	int numberOfTerms = 0;
-
+	
 	Scanner in = new Scanner(text);
+	
 	while (in.hasNext()) {
 
 	    // Convert the word into lower case *unique*
 	    String word = in.next().toLowerCase();
 
 	    // If it is NOT an empty space or a STOP WORD; continue
-	    if (word != "" && !word.matches("^\\p{Punct}") && (isStopWord(word) == false)) {
+	    if (word != "" && word.matches("^[a-z].*$") && !word.matches("^\\p{Punct}")
+		    && (isStopWord(word) == false)) {
+
 		numberOfTerms++;
 		Double count = termFrequency.get(word);
 
@@ -108,8 +113,6 @@ public class Indexing {
 
 	}
 	in.close();
-	// printHashMap(termFrequency);
-	// printWordPosition(wordPosition);
 
 	return numberOfTerms;
     }
@@ -127,7 +130,7 @@ public class Indexing {
 	}
 	return TF;
     }
-    
+
     public static double calculateIDF(double totalDocuments, double totalDocWithTerm) {
 	return Math.log10(totalDocuments / totalDocWithTerm);
     }
@@ -144,7 +147,6 @@ public class Indexing {
 	}
 	return isStopWord;
     }
-    
 
     public static String extractHtml(File fileName) throws IOException, SAXException, TikaException {
 	BodyContentHandler handler = new BodyContentHandler(10 * 1024 * 1024);
@@ -167,7 +169,7 @@ public class Indexing {
 
 	    calculateTF(termFrequency, wordCount(content));
 
-	    // moving TF to DB
+	    // moving TF to DB url, term, freq
 	    for (Map.Entry<String, Double> entry : termFrequency.entrySet()) {
 		insertDB(pathsToIndex.get(i).toString(), entry.getKey(), entry.getValue());
 	    }
@@ -181,9 +183,9 @@ public class Indexing {
 
 	    String word = (String) obj.get("WORD");
 	    Double freq = (Double) obj.get("TFIDF");
-	    
+
 	    DBCursor findWord = md.find(new BasicDBObject("WORD", word));
-	    
+
 	    // Takes the TF stored in TFIDF to calculate TFIDF weight
 	    double TFIDF = freq * Math.log10((double) pathsToIndex.size() / (double) findWord.size());
 
@@ -196,13 +198,15 @@ public class Indexing {
 
     public static void main(String[] args) throws IOException, SAXException, TikaException {
 	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
+	// String PATH =
+	// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 
 	index(PATH);
 
 	// Find the URL that correlates to the word in the collection.
-	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "hi"));
+	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "lie"));
 	for (DBObject link : linksToCrawl) {
-	    System.out.println(link.get("URL").toString());
+	    System.out.println(link.get("URL").hashCode());
 	}
 
     }
