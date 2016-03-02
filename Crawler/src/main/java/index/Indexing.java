@@ -54,7 +54,6 @@ public class Indexing {
 	    "there", "these", "they", "this", "to", "was", "will", "with" };
 
     public static void insertDB(String URL, String term, Double TFIDF) {
-	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("TFIDF", TFIDF);
 	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("Position", null)
 		.append("TFIDF", TFIDF);
 
