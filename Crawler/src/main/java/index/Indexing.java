@@ -203,14 +203,29 @@ public class Indexing {
 
 	    calculateTF(termFrequency, wordCount(content));
 
-	    // moving TF to DB url, term, freq
+	    // Moves Term Frequency to Database (URL, TERM, FREQ)
 	    for (Map.Entry<String, Double> entry : termFrequency.entrySet()) {
 		insertDB(pathsToIndex.get(i).toString(), entry.getKey(), entry.getValue());
 
-		// If the there is an EQUAL TF & POSITION KEY...update that word
-		// position.
+		for (Map.Entry<String, ArrayList<Integer>> pos : position.entrySet()) {
+		    // If the TF Key and Position Key are equal -> Update that unique URL/Word position in the document.
+		    if (entry.getKey().contains(pos.getKey())) {
+			// Grab the position value(s)
+			BasicDBObject PosObj = new BasicDBObject().append("$set",
+				new BasicDBObject().append("Position", pos.getValue()));
+			// Updates to the unique URL, Word
+			md.update(
+				new BasicDBObject("URL", pathsToIndex.get(i).toString()).append("WORD", entry.getKey()),
+				PosObj);
+		    }
+
+//		    System.out.println("Entry.getKey : " + entry.getKey() + " Pos Key : " + pos.getKey());
+//
+//		    System.out.println("pos value being added " + pos.getValue() + "\n");
+
+		}
 	    }
-	    // Clear position for that document.
+	    // Clear HashMaps after each document.
 	    position.clear();
 	    termFrequency.clear();
 	}
