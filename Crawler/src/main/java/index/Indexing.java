@@ -104,18 +104,18 @@ public class Indexing {
 
 		// If the HashMap does not contain this word then add position
 		if (!position.containsKey(word)) {
-		    System.out.println("Word Added: " + word + " | Position: " + positionCounter);
+//		    System.out.println("Word Added: " + word + " | Position: " + positionCounter);
 
 		    wordPosition.add(positionCounter);
 
 		    position.put(word, wordPosition);
 
-		    printWordPosition(position);
+//		    printWordPosition(position);
 
 		} else { // If the word already exists in the HashMap, grab all
 			 // the values and add new value
-		    System.out.println("\nElse");
-		    System.out.println("Word Added: " + word + " Position: " + positionCounter);
+//		    System.out.println("\nElse");
+//		    System.out.println("Word Added: " + word + " Position: " + positionCounter);
 
 		    wordPosition.addAll(position.get(word));
 
@@ -123,7 +123,7 @@ public class Indexing {
 
 		    position.put(word, wordPosition);
 
-		    printWordPosition(position);
+//		    printWordPosition(position);
 		}
 
 		positionCounter++;
@@ -198,6 +198,7 @@ public class Indexing {
 
 	// Goes through each HTML document
 	for (int i = 0; i < pathsToIndex.size(); i++) {
+	    
 	    File file = new File(pathsToIndex.get(i));
 	    String content = extractHtml(file);
 
@@ -208,11 +209,14 @@ public class Indexing {
 		insertDB(pathsToIndex.get(i).toString(), entry.getKey(), entry.getValue());
 
 		for (Map.Entry<String, ArrayList<Integer>> pos : position.entrySet()) {
+		    
 		    // If the TF Key and Position Key are equal -> Update that unique URL/Word position in the document.
 		    if (entry.getKey().contains(pos.getKey())) {
+			
 			// Grab the position value(s)
 			BasicDBObject PosObj = new BasicDBObject().append("$set",
 				new BasicDBObject().append("Position", pos.getValue()));
+			
 			// Updates to the unique URL, Word
 			md.update(
 				new BasicDBObject("URL", pathsToIndex.get(i).toString()).append("WORD", entry.getKey()),
@@ -225,6 +229,7 @@ public class Indexing {
 
 		}
 	    }
+	    
 	    // Clear HashMaps after each document.
 	    position.clear();
 	    termFrequency.clear();
@@ -232,8 +237,10 @@ public class Indexing {
 
 	DBCursor curs = md.find();
 	while (curs.hasNext()) {
+	    
 	    DBObject obj = curs.next();
-
+	    
+	    String url = (String) obj.get("URL");
 	    String word = (String) obj.get("WORD");
 	    Double freq = (Double) obj.get("TFIDF");
 
@@ -244,22 +251,21 @@ public class Indexing {
 
 	    // Updates TFIDF value
 	    BasicDBObject TFIDFObject = new BasicDBObject().append("$set", new BasicDBObject().append("TFIDF", TFIDF));
-	    md.update(new BasicDBObject("WORD", word), TFIDFObject, false, true);
+	    md.update(new BasicDBObject("URL", url).append("WORD", word), TFIDFObject);
 	}
-
     }
 
     public static void main(String[] args) throws IOException, SAXException, TikaException {
+	// Insert directory here
 	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
-	// String PATH =
-	// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
+	// String PATH = "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 
 	index(PATH);
 
 	// Find the URL that correlates to the word in the collection.
-	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "lie"));
+	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "hi"));
 	for (DBObject link : linksToCrawl) {
-	    System.out.println(link.get("URL").hashCode());
+	    System.out.println(link.get("URL").toString());
 	}
 
     }
