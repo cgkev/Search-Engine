@@ -47,7 +47,7 @@ public class Indexing {
 
     private static HashMap<String, Double> termFrequency = new HashMap<String, Double>();
 
-    private static HashMap<String, ArrayList<Integer>> wordPosition = new HashMap<String, ArrayList<Integer>>();
+    private static HashMap<String, ArrayList<Integer>> position = new HashMap<String, ArrayList<Integer>>();
 
     public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
 	    "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
@@ -85,9 +85,9 @@ public class Indexing {
 
     public static double wordCount(String text) {
 	int numberOfTerms = 0;
-	
+	int positionCounter = 0;
 	Scanner in = new Scanner(text);
-	
+
 	while (in.hasNext()) {
 
 	    // Convert the word into lower case *unique*
@@ -99,6 +99,34 @@ public class Indexing {
 
 		numberOfTerms++;
 		Double count = termFrequency.get(word);
+
+		ArrayList<Integer> wordPosition = new ArrayList<Integer>();
+
+		// If the HashMap does not contain this word then add position
+		if (!position.containsKey(word)) {
+//		    System.out.println("Word Added: " + word + " | Position: " + positionCounter);
+
+		    wordPosition.add(positionCounter);
+
+		    position.put(word, wordPosition);
+
+//		    printWordPosition(position);
+
+		} else { // If the word already exists in the HashMap, grab all
+			 // the values and add new value
+//		    System.out.println("\nElse");
+//		    System.out.println("Word Added: " + word + " Position: " + positionCounter);
+
+		    wordPosition.addAll(position.get(word));
+
+		    wordPosition.add(positionCounter);
+
+		    position.put(word, wordPosition);
+
+//		    printWordPosition(position);
+		}
+
+		positionCounter++;
 
 		// If word isn't already in the map, initialize it at 1
 		if (count == null) {
@@ -117,6 +145,12 @@ public class Indexing {
     }
 
     public static void printHashMap(HashMap<String, Double> map) {
+	for (String key : map.keySet()) {
+	    System.out.println(key + " : " + map.get(key));
+	}
+    }
+
+    public static void printWordPosition(HashMap<String, ArrayList<Integer>> map) {
 	for (String key : map.keySet()) {
 	    System.out.println(key + " : " + map.get(key));
 	}
@@ -162,24 +196,51 @@ public class Indexing {
     public static void index(String Path) throws IOException, SAXException, TikaException {
 	List<String> pathsToIndex = traverseAllFiles(Path);
 
+	// Goes through each HTML document
 	for (int i = 0; i < pathsToIndex.size(); i++) {
+	    
 	    File file = new File(pathsToIndex.get(i));
 	    String content = extractHtml(file);
 
 	    calculateTF(termFrequency, wordCount(content));
 
-	    // moving TF to DB url, term, freq
+	    // Moves Term Frequency to Database (URL, TERM, FREQ)
 	    for (Map.Entry<String, Double> entry : termFrequency.entrySet()) {
 		insertDB(pathsToIndex.get(i).toString(), entry.getKey(), entry.getValue());
-	    }
 
+		for (Map.Entry<String, ArrayList<Integer>> pos : position.entrySet()) {
+		    
+		    // If the TF Key and Position Key are equal -> Update that unique URL/Word position in the document.
+		    if (entry.getKey().contains(pos.getKey())) {
+			
+			// Grab the position value(s)
+			BasicDBObject PosObj = new BasicDBObject().append("$set",
+				new BasicDBObject().append("Position", pos.getValue()));
+			
+			// Updates to the unique URL, Word
+			md.update(
+				new BasicDBObject("URL", pathsToIndex.get(i).toString()).append("WORD", entry.getKey()),
+				PosObj);
+		    }
+
+//		    System.out.println("Entry.getKey : " + entry.getKey() + " Pos Key : " + pos.getKey());
+//
+//		    System.out.println("pos value being added " + pos.getValue() + "\n");
+
+		}
+	    }
+	    
+	    // Clear HashMaps after each document.
+	    position.clear();
 	    termFrequency.clear();
 	}
 
 	DBCursor curs = md.find();
 	while (curs.hasNext()) {
+	    
 	    DBObject obj = curs.next();
-
+	    
+	    String url = (String) obj.get("URL");
 	    String word = (String) obj.get("WORD");
 	    Double freq = (Double) obj.get("TFIDF");
 
@@ -190,22 +251,21 @@ public class Indexing {
 
 	    // Updates TFIDF value
 	    BasicDBObject TFIDFObject = new BasicDBObject().append("$set", new BasicDBObject().append("TFIDF", TFIDF));
-	    md.update(new BasicDBObject("WORD", word), TFIDFObject, false, true);
+	    md.update(new BasicDBObject("URL", url).append("WORD", word), TFIDFObject);
 	}
-
     }
 
     public static void main(String[] args) throws IOException, SAXException, TikaException {
+	// Insert directory here
 	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
-	// String PATH =
-	// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
+	// String PATH = "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 
 	index(PATH);
 
 	// Find the URL that correlates to the word in the collection.
-	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "lie"));
+	DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "hi"));
 	for (DBObject link : linksToCrawl) {
-	    System.out.println(link.get("URL").hashCode());
+	    System.out.println(link.get("URL").toString());
 	}
 
     }
