@@ -79,37 +79,37 @@ public class Ranking {
 				int sizeOfLink = crawledLinks.attr("href").toString().length();
 				if (sizeOfLink != 0) {
 					File link = new File(crawledLinks.attr("href").toString());
+
 					if (link.exists()) {
 						outgoingLink++;
 						if (incoming.get(crawledLinks.attr("href").toString()) == null) {
 							incoming.put(crawledLinks.attr("href").toString(), 1);
 						} else {
 							incoming.put(crawledLinks.attr("href").toString(),
-									incoming.get(crawledLinks.attr("href").toString() + 1));
+									incoming.get(crawledLinks.attr("href").toString()) + 1);
 						}
 					}
 
 				}
 			}
-				outgoing.put(paths.get(i), outgoingLink);
-			
+			outgoing.put(paths.get(i), outgoingLink);
+
 		}
 
 		System.out.println("[link] [outgoing] [incoming]");
 		for (String link : outgoing.keySet()) {
 			String key = link.toString();
 			String value = outgoing.get(link).toString();
-			
-			if(incoming.containsKey(link)){
+
+			if (incoming.containsKey(link)) {
 				System.out.println(key + " " + value + " " + incoming.get(link).toString());
 			}
-			//contains no incoming links 
-			else{
+			// contains no incoming links
+			else {
 				System.out.println(key + " " + value + " 0");
 			}
-			
-			
 		}
+
 	}
 
 	public static void main(String[] args) throws IOException {
