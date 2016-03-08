@@ -13,3 +13,5 @@ hs_err_pid*
 
 #json
 *.json
+
+Crawler/.settings/org.eclipse.jdt.core.prefs
