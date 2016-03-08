@@ -55,7 +55,8 @@ public class CrawlerExtractionCLI {
 		}
 
 	}
-
+	
+	
 	// Creates a folder name "source" and stores all raw html locally into that
 	// folder
 	public static void saveHTML(String fileName, String html) {
