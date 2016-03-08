@@ -10,8 +10,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -69,35 +72,47 @@ public class Ranking {
 
 		List<String> paths = traverseAllFiles(path);
 
+		// Goes through all documents
 		for (int i = 0; i < paths.size(); i++) {
 
 			File input = new File(paths.get(i));
 			Document doc = Jsoup.parse(input, "UTF-8");
 			Elements links = doc.select("a[href]");
 			int outgoingLink = 0;
+			
+			// adds all links inside document -> to Set 
+			Set<String> set = new HashSet<String>();
 			for (Element crawledLinks : links) {
-				int sizeOfLink = crawledLinks.attr("href").toString().length();
-				if (sizeOfLink != 0) {
-					File link = new File(crawledLinks.attr("href").toString());
+				set.add(crawledLinks.attr("href").toString());
+			}
+			
+			// check if links are real
+			Iterator<String> iterator = set.iterator();
+			while (iterator.hasNext()) {
+				String link = iterator.next();
 
-					if (link.exists()) {
+				if (link.length() != 0) {
+					File linkCheck = new File(link);
+
+					if (linkCheck.exists()) {
 						outgoingLink++;
-						if (incoming.get(crawledLinks.attr("href").toString()) == null) {
-							incoming.put(crawledLinks.attr("href").toString(), 1);
+						if (incoming.get(link) == null) {
+							incoming.put(link, 1);
 						} else {
-							incoming.put(crawledLinks.attr("href").toString(),
-									incoming.get(crawledLinks.attr("href").toString()) + 1);
+							incoming.put(link, incoming.get(link) + 1);
 						}
 					}
 
 				}
 			}
-			outgoing.put(paths.get(i), outgoingLink);
 
+			outgoing.put(paths.get(i), outgoingLink);
 		}
 
 		System.out.println("[link] [outgoing] [incoming]");
-		for (String link : outgoing.keySet()) {
+		for (String link : outgoing.keySet())
+
+		{
 			String key = link.toString();
 			String value = outgoing.get(link).toString();
 
