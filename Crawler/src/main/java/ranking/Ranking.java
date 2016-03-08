@@ -155,7 +155,7 @@ public class Ranking {
 		for (int j = 0; j < 100; j++) {
 			Map<String, Double> previousPR = new HashMap<String, Double>(pageRank);
 
-			System.out.println("---Iteration "+ j +"--");
+			System.out.println("---Iteration " + j + "--");
 
 			for (String key : outgoingList.keySet()) {
 				// Incoming values for keys
@@ -168,16 +168,14 @@ public class Ranking {
 				pageRank.put(key, PR);
 				System.out.println("PR of " + key + "   -> " + pageRank.get(key));
 
-
 			}
 			System.out.println();
 		}
 
-//		for (String key : pageRank.keySet())
-//		{
-//			System.out.println("PR of " + key + "   -> " + pageRank.get(key));
-//
-//		}
+		for (String key : pageRank.keySet()) {
+			insertDB(key, pageRank.get(key));
+			// System.out.println("PR of " + key + " -> " + pageRank.get(key));
+		}
 
 	}
 
