@@ -128,7 +128,8 @@ public class Ranking {
 	}
 
 	public static void main(String[] args) throws IOException {
-		linkAnalysis("/Users/kevin/Desktop/testing");
+		//linkAnalysis("/Users/kevin/Desktop/testing");
+		//linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
 
 		mongoClient.close();
 	}
