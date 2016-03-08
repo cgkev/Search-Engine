@@ -67,26 +67,33 @@ public class Ranking {
 	}
 
 	public static void linkAnalysis(String path) throws IOException {
-		Map<String, Integer> incoming = new HashMap<String, Integer>();
-		Map<String, Integer> outgoing = new HashMap<String, Integer>();
+
+		HashMap<String, ArrayList<String>> incomingList = new HashMap<String, ArrayList<String>>();
+		HashMap<String, ArrayList<String>> outgoingList = new HashMap<String, ArrayList<String>>();
+
+		Map<String, Double> pageRank = new HashMap<String, Double>();
 
 		List<String> paths = traverseAllFiles(path);
 
 		// Goes through all documents
 		for (int i = 0; i < paths.size(); i++) {
+			pageRank.put(paths.get(i), 1 / 3.0);
 
 			File input = new File(paths.get(i));
 			Document doc = Jsoup.parse(input, "UTF-8");
 			Elements links = doc.select("a[href]");
 			int outgoingLink = 0;
-			
-			// adds all links inside document -> to Set 
+
+			// adds all links inside document -> to Set
 			Set<String> set = new HashSet<String>();
 			for (Element crawledLinks : links) {
 				set.add(crawledLinks.attr("href").toString());
 			}
-			
+
 			// check if links are real
+			// all links inside document
+			ArrayList<String> outgoing = new ArrayList<String>();
+
 			Iterator<String> iterator = set.iterator();
 			while (iterator.hasNext()) {
 				String link = iterator.next();
@@ -95,41 +102,60 @@ public class Ranking {
 					File linkCheck = new File(link);
 
 					if (linkCheck.exists()) {
-						outgoingLink++;
-						if (incoming.get(link) == null) {
-							incoming.put(link, 1);
+						outgoing.add(link);
+						if (incomingList.get(link) == null) {
+							ArrayList<String> incoming = new ArrayList<String>();
+							incoming.add(paths.get(i));
+							incomingList.put(link, incoming);
 						} else {
-							incoming.put(link, incoming.get(link) + 1);
+							ArrayList<String> incoming = incomingList.get(link);
+							incoming.add(paths.get(i));
+							incomingList.put(link, incoming);
 						}
-					}
 
+					}
 				}
 			}
-
-			outgoing.put(paths.get(i), outgoingLink);
+			
+			outgoingList.put(paths.get(i), outgoing);
 		}
 
-		System.out.println("[link] [outgoing] [incoming]");
-		for (String link : outgoing.keySet())
+		System.out.println("[link] [outgoing] [incoming] [pageRank]");
+		for (String link : outgoingList.keySet())
 
 		{
 			String key = link.toString();
-			String value = outgoing.get(link).toString();
+			System.out.println("Document: " + key);
 
-			if (incoming.containsKey(link)) {
-				System.out.println(key + " " + value + " " + incoming.get(link).toString());
+			ArrayList<String> valueOfOutgoing = outgoingList.get(link);
+			ArrayList<String> valueOfIncoming = incomingList.get(link);
+			System.out.println(" \n Outgoing:");
+
+			if (incomingList.containsKey(link)) {
+				for (int i = 0; i < valueOfOutgoing.size(); i++) {
+					System.out.println(valueOfOutgoing.get(i));
+				}
+
+				System.out.println(" \n Incoming:");
+
+				for (int i = 0; i < valueOfIncoming.size(); i++) {
+					System.out.println(valueOfIncoming.get(i));
+				}
 			}
 			// contains no incoming links
 			else {
-				System.out.println(key + " " + value + " 0");
+				for (int i = 0; i < valueOfOutgoing.size(); i++) {
+					System.out.println(valueOfOutgoing.get(i));
+				}
 			}
+			System.out.println("----------------------------------------------------------");
 		}
 
 	}
 
 	public static void main(String[] args) throws IOException {
-		//linkAnalysis("/Users/kevin/Desktop/testing");
-		//linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
+		linkAnalysis("/Users/kevin/Desktop/testing");
+		// linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
 
 		mongoClient.close();
 	}
