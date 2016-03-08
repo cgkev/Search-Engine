@@ -56,9 +56,8 @@ public class Ranking {
 	}
 
 	// inserts into default database
-	public static void insertDB(String URL, int incoming, int outgoing) {
-		DBObject document = new BasicDBObject().append("_id", URL).append("INCOMING", incoming).append("OUTGOING",
-				outgoing);
+	public static void insertDB(String URL, double pageRank) {
+		DBObject document = new BasicDBObject().append("_id", URL).append("Page Rank", pageRank);
 		try {
 			md.insert(document);
 		} catch (DuplicateKeyException dke) {
@@ -152,22 +151,33 @@ public class Ranking {
 		// }
 
 		// Will always have a key for outgoing. Never say never null
-		for (String key : outgoingList.keySet()) {
 
-			System.out.println("pageRank for: " + key);
+		for (int j = 0; j < 100; j++) {
+			Map<String, Double> previousPR = new HashMap<String, Double>(pageRank);
 
-			// Incoming values for keys
-			ArrayList<String> currentIncomingLink = incomingList.get(key);
-			double PR = 0;
-			for (int i = 0; i < currentIncomingLink.size(); i++) {
-				int outgoingsize = outgoingList.get(currentIncomingLink.get(i)).size();
-				PR += pageRank.get(key) / outgoingsize;
+			System.out.println("---Iteration "+ j +"--");
+
+			for (String key : outgoingList.keySet()) {
+				// Incoming values for keys
+				ArrayList<String> currentIncomingLink = incomingList.get(key);
+				double PR = 0;
+				for (int i = 0; i < currentIncomingLink.size(); i++) {
+					int outgoingsize = outgoingList.get(currentIncomingLink.get(i)).size();
+					PR += previousPR.get(currentIncomingLink.get(i)) / outgoingsize;
+				}
+				pageRank.put(key, PR);
+				System.out.println("PR of " + key + "   -> " + pageRank.get(key));
+
+
 			}
-			System.out.println(PR);
-
 			System.out.println();
-
 		}
+
+//		for (String key : pageRank.keySet())
+//		{
+//			System.out.println("PR of " + key + "   -> " + pageRank.get(key));
+//
+//		}
 
 	}
 
