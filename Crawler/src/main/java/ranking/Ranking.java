@@ -116,39 +116,57 @@ public class Ranking {
 					}
 				}
 			}
-			
+
 			outgoingList.put(paths.get(i), outgoing);
 		}
 
-		System.out.println("[link] [outgoing] [incoming] [pageRank]");
-		for (String link : outgoingList.keySet())
+		// System.out.println("[link] [outgoing] [incoming] [pageRank]");
+		// for (String link : outgoingList.keySet())
+		//
+		// {
+		// String key = link.toString();
+		// System.out.println("Document: " + key);
+		//
+		// ArrayList<String> valueOfOutgoing = outgoingList.get(link);
+		// ArrayList<String> valueOfIncoming = incomingList.get(link);
+		// System.out.println(" \n Outgoing:");
+		//
+		// if (incomingList.containsKey(link)) {
+		// for (int i = 0; i < valueOfOutgoing.size(); i++) {
+		// System.out.println(valueOfOutgoing.get(i));
+		// }
+		//
+		// System.out.println(" \n Incoming:");
+		//
+		// for (int i = 0; i < valueOfIncoming.size(); i++) {
+		// System.out.println(valueOfIncoming.get(i));
+		// }
+		// }
+		// // contains no incoming links
+		// else {
+		// for (int i = 0; i < valueOfOutgoing.size(); i++) {
+		// System.out.println(valueOfOutgoing.get(i));
+		// }
+		// }
+		// System.out.println("----------------------------------------------------------");
+		// }
 
-		{
-			String key = link.toString();
-			System.out.println("Document: " + key);
+		// Will always have a key for outgoing. Never say never null
+		for (String key : outgoingList.keySet()) {
 
-			ArrayList<String> valueOfOutgoing = outgoingList.get(link);
-			ArrayList<String> valueOfIncoming = incomingList.get(link);
-			System.out.println(" \n Outgoing:");
+			System.out.println("pageRank for: " + key);
 
-			if (incomingList.containsKey(link)) {
-				for (int i = 0; i < valueOfOutgoing.size(); i++) {
-					System.out.println(valueOfOutgoing.get(i));
-				}
-
-				System.out.println(" \n Incoming:");
-
-				for (int i = 0; i < valueOfIncoming.size(); i++) {
-					System.out.println(valueOfIncoming.get(i));
-				}
+			// Incoming values for keys
+			ArrayList<String> currentIncomingLink = incomingList.get(key);
+			double PR = 0;
+			for (int i = 0; i < currentIncomingLink.size(); i++) {
+				int outgoingsize = outgoingList.get(currentIncomingLink.get(i)).size();
+				PR += pageRank.get(key) / outgoingsize;
 			}
-			// contains no incoming links
-			else {
-				for (int i = 0; i < valueOfOutgoing.size(); i++) {
-					System.out.println(valueOfOutgoing.get(i));
-				}
-			}
-			System.out.println("----------------------------------------------------------");
+			System.out.println(PR);
+
+			System.out.println();
+
 		}
 
 	}
