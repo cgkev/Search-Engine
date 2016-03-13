@@ -32,10 +32,10 @@ import com.mongodb.WriteConcernException;
 // Write ranking here 
 
 public class Ranking {
-	static MongoClient mongoClient = new MongoClient();
-	@SuppressWarnings("deprecation")
-	static DB database = mongoClient.getDB("IR");
-	static DBCollection md = database.getCollection("la");
+	// static MongoClient mongoClient = new MongoClient();
+	// @SuppressWarnings("deprecation")
+	// static DB database = mongoClient.getDB("IR");
+	// static DBCollection md = database.getCollection("la");
 
 	public static List<String> traverseAllFiles(String parentDirectory) throws IOException {
 		Path startPath = Paths.get(parentDirectory);
@@ -56,14 +56,15 @@ public class Ranking {
 	}
 
 	// inserts into default database
-	public static void insertDB(String URL, double pageRank) {
-		DBObject document = new BasicDBObject().append("_id", URL).append("Page Rank", pageRank);
-		try {
-			md.insert(document);
-		} catch (DuplicateKeyException dke) {
-		} catch (WriteConcernException e) {
-		}
-	}
+	// public static void insertDB(String URL, double pageRank) {
+	// DBObject document = new BasicDBObject().append("_id", URL).append("Page
+	// Rank", pageRank);
+	// try {
+	// md.insert(document);
+	// } catch (DuplicateKeyException dke) {
+	// } catch (WriteConcernException e) {
+	// }
+	// }
 
 	public static void linkAnalysis(String path) throws IOException {
 
@@ -76,12 +77,11 @@ public class Ranking {
 
 		// Goes through all documents
 		for (int i = 0; i < paths.size(); i++) {
-			pageRank.put(paths.get(i), 1 / 3.0);
+			pageRank.put(paths.get(i), (double) 1 / paths.size());
 
 			File input = new File(paths.get(i));
 			Document doc = Jsoup.parse(input, "UTF-8");
 			Elements links = doc.select("a[href]");
-			int outgoingLink = 0;
 
 			// adds all links inside document -> to Set
 			Set<String> set = new HashSet<String>();
@@ -117,73 +117,45 @@ public class Ranking {
 			}
 
 			outgoingList.put(paths.get(i), outgoing);
+			if (i % 100 == 1) {
+				System.out.println((int) (((double) i / paths.size()) * 100));
+			}
 		}
-
-		// System.out.println("[link] [outgoing] [incoming] [pageRank]");
-		// for (String link : outgoingList.keySet())
-		//
-		// {
-		// String key = link.toString();
-		// System.out.println("Document: " + key);
-		//
-		// ArrayList<String> valueOfOutgoing = outgoingList.get(link);
-		// ArrayList<String> valueOfIncoming = incomingList.get(link);
-		// System.out.println(" \n Outgoing:");
-		//
-		// if (incomingList.containsKey(link)) {
-		// for (int i = 0; i < valueOfOutgoing.size(); i++) {
-		// System.out.println(valueOfOutgoing.get(i));
-		// }
-		//
-		// System.out.println(" \n Incoming:");
-		//
-		// for (int i = 0; i < valueOfIncoming.size(); i++) {
-		// System.out.println(valueOfIncoming.get(i));
-		// }
-		// }
-		// // contains no incoming links
-		// else {
-		// for (int i = 0; i < valueOfOutgoing.size(); i++) {
-		// System.out.println(valueOfOutgoing.get(i));
-		// }
-		// }
-		// System.out.println("----------------------------------------------------------");
-		// }
-
-		// Will always have a key for outgoing. Never say never null
-
 		for (int j = 0; j < 100; j++) {
+
 			Map<String, Double> previousPR = new HashMap<String, Double>(pageRank);
 
-			System.out.println("---Iteration " + j + "--");
-
+			// System.out.println("---Iteration " + j + "--");
 			for (String key : outgoingList.keySet()) {
 				// Incoming values for keys
-				ArrayList<String> currentIncomingLink = incomingList.get(key);
-				double PR = 0;
-				for (int i = 0; i < currentIncomingLink.size(); i++) {
-					int outgoingsize = outgoingList.get(currentIncomingLink.get(i)).size();
-					PR += previousPR.get(currentIncomingLink.get(i)) / outgoingsize;
+				if (incomingList.containsKey(key)) {
+					ArrayList<String> currentIncomingLink = incomingList.get(key);
+					double PR = 0;
+					for (int i = 0; i < currentIncomingLink.size(); i++) {
+						int outgoingsize = outgoingList.get(currentIncomingLink.get(i)).size();
+						PR += previousPR.get(currentIncomingLink.get(i)) / outgoingsize;
+					}
+					pageRank.put(key, PR);
 				}
-				pageRank.put(key, PR);
-				System.out.println("PR of " + key + "   -> " + pageRank.get(key));
-
+				// System.out.println("PR of " + key + " ---> " +
+				// pageRank.get(key));
 			}
-			System.out.println();
 		}
-
+		double test = 0;
 		for (String key : pageRank.keySet()) {
-			insertDB(key, pageRank.get(key));
-			// System.out.println("PR of " + key + " -> " + pageRank.get(key));
+			// insertDB(key, pageRank.get(key));
+			System.out.println("PR of " + key + " -> " + pageRank.get(key));
+			test += pageRank.get(key);
 		}
-
+		System.out.println("test " + test);
 	}
 
 	public static void main(String[] args) throws IOException {
-		linkAnalysis("/Users/kevin/Desktop/testing");
+		linkAnalysis("/Users/kevin/Desktop/munged");
+
 		// linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
 
-		mongoClient.close();
+		// mongoClient.close();
 	}
 
 }
