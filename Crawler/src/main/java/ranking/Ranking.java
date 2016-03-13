@@ -32,10 +32,10 @@ import com.mongodb.WriteConcernException;
 // Write ranking here 
 
 public class Ranking {
-	// static MongoClient mongoClient = new MongoClient();
-	// @SuppressWarnings("deprecation")
-	// static DB database = mongoClient.getDB("IR");
-	// static DBCollection md = database.getCollection("la");
+	static MongoClient mongoClient = new MongoClient();
+	@SuppressWarnings("deprecation")
+	static DB database = mongoClient.getDB("IR");
+	static DBCollection md = database.getCollection("la");
 
 	public static List<String> traverseAllFiles(String parentDirectory) throws IOException {
 		Path startPath = Paths.get(parentDirectory);
@@ -55,16 +55,14 @@ public class Ranking {
 		return pathsOfHtml;
 	}
 
-	// inserts into default database
-	// public static void insertDB(String URL, double pageRank) {
-	// DBObject document = new BasicDBObject().append("_id", URL).append("Page
-	// Rank", pageRank);
-	// try {
-	// md.insert(document);
-	// } catch (DuplicateKeyException dke) {
-	// } catch (WriteConcernException e) {
-	// }
-	// }
+	public static void insertDB(String URL, double pageRank) {
+		DBObject document = new BasicDBObject().append("_id", URL).append("PageRank", pageRank);
+		try {
+			md.insert(document);
+		} catch (DuplicateKeyException dke) {
+		} catch (WriteConcernException e) {
+		}
+	}
 
 	public static void linkAnalysis(String path) throws IOException {
 
@@ -143,8 +141,8 @@ public class Ranking {
 		}
 		double test = 0;
 		for (String key : pageRank.keySet()) {
-			// insertDB(key, pageRank.get(key));
-			System.out.println("PR of " + key + " -> " + pageRank.get(key));
+			insertDB(key, pageRank.get(key));
+			// System.out.println("PR of " + key + " -> " + pageRank.get(key));
 			test += pageRank.get(key);
 		}
 		System.out.println("test " + test);
@@ -155,7 +153,7 @@ public class Ranking {
 
 		// linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
 
-		// mongoClient.close();
+		mongoClient.close();
 	}
 
 }
