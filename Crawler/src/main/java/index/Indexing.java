@@ -176,8 +176,8 @@ public class Indexing {
 	HashMap<String, Double> tfidf = new HashMap<String, Double>();
 
 	for (int i = 0; i < pathsToIndex.size(); i++) {
-	    counter++;
-	    System.out.println(counter);
+//	    counter++;
+//	    System.out.println(counter);
 	    File file = new File(pathsToIndex.get(i));
 	    String content = extractHtml(file);
 	    HashMap<String, Integer> parsedHashMap = parseDocument(content, pathsToIndex.get(i));
@@ -193,7 +193,7 @@ public class Indexing {
 	    }
 	}
 	
-	System.out.println("starting insert");
+//	System.out.println("starting insert");
 	for (String key : idf.keySet()) {
 	    idfval = Math.log10((double) pathsToIndex.size() / idf.get(key).size());
 	    insertDB(key, idf.get(key));
@@ -243,9 +243,9 @@ public class Indexing {
 
     public static void main(String[] args) throws IOException, SAXException, TikaException {
 	// Insert directory here
-//	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
-	 String PATH =
-	 "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
+	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
+//	 String PATH =
+//	 "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 
 	index(PATH);
 	mongoClient.close();
