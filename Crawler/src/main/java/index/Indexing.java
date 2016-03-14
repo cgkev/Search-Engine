@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Scanner;
 
 import org.apache.tika.exception.TikaException;
@@ -27,7 +25,6 @@ import org.xml.sax.SAXException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
@@ -59,9 +56,14 @@ public class Indexing {
 	    "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
 	    "there", "these", "they", "this", "to", "was", "will", "with" };
 
-    public static void insertDB(String URL, String term, Double TFIDF) {
-	DBObject document = new BasicDBObject().append("URL", URL).append("WORD", term).append("Position", null)
-		.append("TFIDF", TFIDF);
+    public static void insertDB(String term, HashSet<String> URL) {
+	// DBObject document = new BasicDBObject().append("URL",
+	// URL).append("WORD", term).append("Position", null)
+	// .append("TFIDF", TFIDF);
+
+	// Need to store term, list of documents and tfidf
+
+	DBObject document = new BasicDBObject().append("_id", term).append("URL", URL).append("TFIDF", null);
 
 	try {
 	    md.insert(document);
@@ -139,16 +141,6 @@ public class Indexing {
 	}
     }
 
-    public static void calculateTF(HashMap<String, Double> map, double numberOfTerms) {
-	for (Map.Entry<String, Double> entry : map.entrySet()) {
-	    entry.setValue(entry.getValue() / numberOfTerms);
-	}
-    }
-
-    public static double calculateIDF(double totalDocuments, double totalDocWithTerm) {
-	return Math.log10(totalDocuments / totalDocWithTerm);
-    }
-
     public static boolean isStopWord(String word) {
 
 	boolean isStopWord = false;
@@ -192,7 +184,7 @@ public class Indexing {
 
 	for (int i = 0; i < pathsToIndex.size(); i++) {
 	    counter++;
-//	    System.out.println(counter);
+	    System.out.println(counter);
 	    File file = new File(pathsToIndex.get(i));
 	    String content = extractHtml(file);
 	    HashMap<String, Integer> parsedHashMap = parseDocument(content, pathsToIndex.get(i));
@@ -205,7 +197,7 @@ public class Indexing {
 	    for (String m : parsedHashMap.keySet()) {
 		tf = (double) parsedHashMap.get(m) / parsedHashMap.size();
 		tfcalc.put(m, tf);
-		System.out.println("WORD: " + m + " - TF: " + tf);
+		// System.out.println("WORD: " + m + " - TF: " + tf);
 	    }
 	    // for (Map.Entry<String, Integer> entry : parsedHashMap.entrySet())
 	    // {
@@ -215,9 +207,10 @@ public class Indexing {
 	    // // tf);
 	    // }
 	}
-
+	System.out.println("starting insert");
 	for (String key : idf.keySet()) {
 	    idfval = Math.log10((double) pathsToIndex.size() / idf.get(key).size());
+	    insertDB(key, idf.get(key));
 	    dfcalc.put(key, idfval);
 	    // System.out.println("Total path to index : " +
 	    // pathsToIndex.size());
@@ -227,23 +220,32 @@ public class Indexing {
 	    // System.out.println("IDF: " + idfval);
 	    // System.out.println();
 	}
-	
-
+//	System.out.println("insert done");
+//	int update = 0;
 	double tfidfcalc = 0.0;
+//	System.out.println("tfidf update");
 	for (String word : tfcalc.keySet()) {
-	    System.out.println("word "+ word);
+//	    update++;
 	    if (dfcalc.containsKey(word)) {
 		tfidfcalc = dfcalc.get(word) * tfcalc.get(word);
-		System.out.println("tfidfcalc "+tfidfcalc);
+		// System.out.println("Word: " + word + "\n tfidfcalc
+		// "+tfidfcalc);
+		// System.out.println();
 		tfidf.put(word, tfidfcalc);
+//		System.out.println("updating: " + update);
+		BasicDBObject TFIDFObject = new BasicDBObject().append("$set",
+			new BasicDBObject().append("TFIDF", tfidf.get(word)));
+		md.update(new BasicDBObject("_id", word), TFIDFObject);
 	    }
 	}
-	System.out.println(tfidf.size());
-	
-//	 for (String key : tfidf.keySet()) {
-//	 System.out.println(key + " : " + tfidf.get(key));
-//	 }
-	
+//	System.out.println("tfidf done");
+
+	// System.out.println(tfidf.size());
+
+	// for (String key : tfidf.keySet()) {
+	// System.out.println(key + " : " + tfidf.get(key));
+	// }
+
 	// System.out.println("Term Frequency: ");
 	// for (String key : termFrequency.keySet()) {
 	// System.out.println(key + " : " + termFrequency.get(key));
@@ -260,12 +262,12 @@ public class Indexing {
 
     public static void main(String[] args) throws IOException, SAXException, TikaException {
 	// Insert directory here
-	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
-	// String PATH =
-	// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
+//	String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
+	 String PATH =
+	 "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 
 	index(PATH);
-
+	mongoClient.close();
 	// Find the URL that correlates to the word in the collection.
 	// DBCursor linksToCrawl = md.find(new BasicDBObject("WORD", "hi"));
 	// for (DBObject link : linksToCrawl) {
