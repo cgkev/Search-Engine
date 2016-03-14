@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,19 +51,11 @@ public class Indexing {
     // <Term, Document>
     private static HashMap<String, HashSet<String>> idf = new HashMap<String, HashSet<String>>();
 
-    private static HashMap<String, ArrayList<Integer>> position = new HashMap<String, ArrayList<Integer>>();
-
     public static final String[] ENGLISH_STOP_WORDS = { "a", "an", "and", "are", "as", "at", "be", "but", "by", "for",
 	    "if", "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", "that", "the", "their", "then",
 	    "there", "these", "they", "this", "to", "was", "will", "with" };
 
     public static void insertDB(String term, HashSet<String> URL) {
-	// DBObject document = new BasicDBObject().append("URL",
-	// URL).append("WORD", term).append("Position", null)
-	// .append("TFIDF", TFIDF);
-
-	// Need to store term, list of documents and tfidf
-
 	DBObject document = new BasicDBObject().append("_id", term).append("URL", URL).append("TFIDF", null);
 
 	try {
@@ -193,20 +186,13 @@ public class Indexing {
 
 	    // For each word, find the number of time the TERM occurs in the
 	    // document (AND) divide it by the number of terms in the document.
-
 	    for (String m : parsedHashMap.keySet()) {
 		tf = (double) parsedHashMap.get(m) / parsedHashMap.size();
 		tfcalc.put(m, tf);
 		// System.out.println("WORD: " + m + " - TF: " + tf);
 	    }
-	    // for (Map.Entry<String, Integer> entry : parsedHashMap.entrySet())
-	    // {
-	    // tf = (double) entry.getValue() / parsedHashMap.size();
-	    // tfcalc.put(entry, tf);
-	    // // System.out.println("WORD: " + entry.getKey() + " - TF: " +
-	    // // tf);
-	    // }
 	}
+	
 	System.out.println("starting insert");
 	for (String key : idf.keySet()) {
 	    idfval = Math.log10((double) pathsToIndex.size() / idf.get(key).size());
@@ -220,31 +206,26 @@ public class Indexing {
 	    // System.out.println("IDF: " + idfval);
 	    // System.out.println();
 	}
-//	System.out.println("insert done");
-//	int update = 0;
+	
 	double tfidfcalc = 0.0;
-//	System.out.println("tfidf update");
+
 	for (String word : tfcalc.keySet()) {
-//	    update++;
 	    if (dfcalc.containsKey(word)) {
 		tfidfcalc = dfcalc.get(word) * tfcalc.get(word);
 		// System.out.println("Word: " + word + "\n tfidfcalc
 		// "+tfidfcalc);
-		// System.out.println();
 		tfidf.put(word, tfidfcalc);
-//		System.out.println("updating: " + update);
-		BasicDBObject TFIDFObject = new BasicDBObject().append("$set",
-			new BasicDBObject().append("TFIDF", tfidf.get(word)));
-		md.update(new BasicDBObject("_id", word), TFIDFObject);
 	    }
 	}
-//	System.out.println("tfidf done");
 
-	// System.out.println(tfidf.size());
-
-	// for (String key : tfidf.keySet()) {
-	// System.out.println(key + " : " + tfidf.get(key));
-	// }
+	double normalizedTFIDF = 0.0;
+	double maxTFIDF = Collections.max(tfidf.values());
+	for (String nWord : tfidf.keySet()) {
+	    normalizedTFIDF = tfidf.get(nWord) / maxTFIDF;
+	    BasicDBObject TFIDFObject = new BasicDBObject().append("$set",
+		    new BasicDBObject().append("TFIDF", normalizedTFIDF));
+	    md.update(new BasicDBObject("_id", nWord), TFIDFObject);
+	}
 
 	// System.out.println("Term Frequency: ");
 	// for (String key : termFrequency.keySet()) {
