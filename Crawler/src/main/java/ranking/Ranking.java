@@ -65,6 +65,7 @@ public class Ranking {
 	}
 
 	public static void linkAnalysis(String path) throws IOException {
+		System.out.println("Ranking Started");
 
 		HashMap<String, ArrayList<String>> incomingList = new HashMap<String, ArrayList<String>>();
 		HashMap<String, ArrayList<String>> outgoingList = new HashMap<String, ArrayList<String>>();
@@ -115,10 +116,11 @@ public class Ranking {
 			}
 
 			outgoingList.put(paths.get(i), outgoing);
-			if (i % 100 == 1) {
-				System.out.println((int) (((double) i / paths.size()) * 100));
-			}
+//			if (i % 100 == 1) {
+//				System.out.println((int) (((double) i / paths.size()) * 100) + "% Complete ");
+//			}
 		}
+
 		for (int j = 0; j < 100; j++) {
 
 			Map<String, Double> previousPR = new HashMap<String, Double>(pageRank);
@@ -139,13 +141,15 @@ public class Ranking {
 				// pageRank.get(key));
 			}
 		}
+		System.out.println("Ranking Complete");
+
+		System.out.println("Inserting into MongoDB");
 		double test = 0;
 		for (String key : pageRank.keySet()) {
 			insertDB(key, pageRank.get(key));
 			// System.out.println("PR of " + key + " -> " + pageRank.get(key));
-			test += pageRank.get(key);
 		}
-		System.out.println("test " + test);
+		System.out.println("Finished inserting into MongoDB");
 	}
 
 	public static void main(String[] args) throws IOException {

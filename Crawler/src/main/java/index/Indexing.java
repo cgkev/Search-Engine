@@ -161,13 +161,12 @@ public class Indexing {
 
 	public static void index(String Path) throws IOException, SAXException, TikaException {
 
+		System.out.println("Indexing started");
 		List<String> pathsToIndex = traverseAllFiles(Path);
 
 		// Goes through each HTML document
 		double tf = 0;
 		double idfval = 0.0;
-
-		int counter = 0;
 
 		HashMap<String, Double> tfcalc = new HashMap<String, Double>();
 
@@ -238,12 +237,13 @@ public class Indexing {
 		// for (String key : idf.keySet()) {
 		// System.out.println(key + " : " + idf.get(key));
 		// }
+		System.out.println("Indexing finished");
 
 	}
 
 	public static void main(String[] args) throws IOException, SAXException, TikaException {
 		// Insert directory here
-		String PATH = "C:\\Users\\LittleMonster\\Desktop\\UrlLinks";
+		String PATH = "/Users/kevin/Desktop/munged";
 		// String PATH =
 		// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 
