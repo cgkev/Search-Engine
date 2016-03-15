@@ -35,7 +35,7 @@ public class Ranking {
 	static MongoClient mongoClient = new MongoClient();
 	@SuppressWarnings("deprecation")
 	static DB database = mongoClient.getDB("IR");
-	static DBCollection md = database.getCollection("la");
+	static DBCollection md = database.getCollection("rank");
 
 	public static List<String> traverseAllFiles(String parentDirectory) throws IOException {
 		Path startPath = Paths.get(parentDirectory);
