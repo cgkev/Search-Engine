@@ -8,7 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -94,7 +96,7 @@ public class Ranking {
 
 			Iterator<String> iterator = set.iterator();
 			while (iterator.hasNext()) {
-				String link = iterator.next();
+				String link = path + "/" + iterator.next();
 
 				if (link.length() != 0) {
 					File linkCheck = new File(link);
@@ -114,14 +116,10 @@ public class Ranking {
 					}
 				}
 			}
-
 			outgoingList.put(paths.get(i), outgoing);
-//			if (i % 100 == 1) {
-//				System.out.println((int) (((double) i / paths.size()) * 100) + "% Complete ");
-//			}
 		}
 
-		for (int j = 0; j < 100; j++) {
+		for (int j = 0; j < 1000; j++) {
 
 			Map<String, Double> previousPR = new HashMap<String, Double>(pageRank);
 
@@ -144,9 +142,12 @@ public class Ranking {
 		System.out.println("Ranking Complete");
 
 		System.out.println("Inserting into MongoDB");
-		double test = 0;
+
+		DecimalFormat df = new DecimalFormat("#.#########");
+		System.out.println(Double.parseDouble(df.format(Collections.max(pageRank.values()))));
+
 		for (String key : pageRank.keySet()) {
-			insertDB(key, pageRank.get(key));
+			insertDB(key, Double.parseDouble(df.format(pageRank.get(key))));
 			// System.out.println("PR of " + key + " -> " + pageRank.get(key));
 		}
 		System.out.println("Finished inserting into MongoDB");
