@@ -96,7 +96,7 @@ public class Ranking {
 
 			Iterator<String> iterator = set.iterator();
 			while (iterator.hasNext()) {
-				String link = path + "/" + iterator.next();
+				String link = path + "\\" + iterator.next();
 
 				if (link.length() != 0) {
 					File linkCheck = new File(link);
@@ -154,7 +154,9 @@ public class Ranking {
 	}
 
 	public static void main(String[] args) throws IOException {
-		linkAnalysis("/Users/kevin/Desktop/munged");
+		String PATH = "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\Search-Engine\\Crawler\\source";
+
+		linkAnalysis(PATH);
 
 		// linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
 

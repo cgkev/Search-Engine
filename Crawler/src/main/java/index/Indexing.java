@@ -325,7 +325,9 @@ public class Indexing {
 	// String PATH =
 	// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\en";
 	
-	String PATH = "C:\\Users\\LittleMonster\\Desktop\\munged";
+//	String PATH = "C:\\Users\\LittleMonster\\Desktop\\munged";
+	
+	String PATH = "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\Search-Engine\\Crawler\\source";
 	index(PATH);
 
 	mongoClient.close();
