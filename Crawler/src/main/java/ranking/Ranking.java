@@ -144,7 +144,6 @@ public class Ranking {
 		System.out.println("Inserting into MongoDB");
 
 		DecimalFormat df = new DecimalFormat("#.#########");
-		System.out.println(Double.parseDouble(df.format(Collections.max(pageRank.values()))));
 
 		for (String key : pageRank.keySet()) {
 			insertDB(key, Double.parseDouble(df.format(pageRank.get(key))));
@@ -154,7 +153,12 @@ public class Ranking {
 	}
 
 	public static void main(String[] args) throws IOException {
-		linkAnalysis("/Users/kevin/Desktop/munged");
+		// String PATH =
+		// "C:\\Users\\LittleMonster\\Documents\\CSULA\\WINTER2016\\CS454\\Search-Engine\\Crawler\\source";
+
+		String PATH = "/Users/kevin/Desktop/source";
+
+		linkAnalysis(PATH);
 
 		// linkAnalysis("C:/Users/LittleMonster/Desktop/testing");
 
