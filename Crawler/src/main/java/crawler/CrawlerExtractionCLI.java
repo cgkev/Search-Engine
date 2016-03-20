@@ -55,8 +55,7 @@ public class CrawlerExtractionCLI {
 		}
 
 	}
-	
-	
+
 	// Creates a folder name "source" and stores all raw html locally into that
 	// folder
 	public static void saveHTML(String fileName, String html) {
@@ -67,7 +66,7 @@ public class CrawlerExtractionCLI {
 		// create and write to .html file
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter("source/" + fileName + ".html"));
+			writer = new BufferedWriter(new FileWriter("source/" + fileName));
 			writer.write(html);
 			writer.close();
 		} catch (IOException e) {
@@ -156,7 +155,8 @@ public class CrawlerExtractionCLI {
 				if (error == null && doc != null) { // no errors
 
 					// save raw html
-					saveHTML(link.get("_id").hashCode() + "", doc.toString());
+					saveHTML(link.get("_id").toString().substring(link.get("_id").toString().lastIndexOf("/")) + "",
+							doc.toString());
 
 					// extract metadata to DB
 					if (extractToDB) {
